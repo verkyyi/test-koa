@@ -5,7 +5,10 @@ const bodyParser = require("koa-bodyparser");
 const fs = require("fs");
 const path = require("path");
 const { init: initDB, Counter } = require("./db");
-
+const cloud = require('wx-server-sdk')
+cloud.init({
+  env: cloud.DYNAMIC_CURRENT_ENV
+});
 const router = new Router();
 
 const homePage = fs.readFileSync(path.join(__dirname, "index.html"), "utf-8");
@@ -48,6 +51,18 @@ router.get("/api/wx_openid", async (ctx) => {
   if (ctx.request.headers["x-wx-source"]) {
     ctx.body = req.headers["x-wx-openid"];
   }
+});
+
+router.get("/api/qr_code", async (ctx) => {
+  const resp = await cloud.openapi.wxacode.get({
+    path: 'pages/index/index'
+  });
+  const { buffer } = resp;
+  const upload = await cloud.uploadFile({
+    cloudPath: 'code.png',
+    fileContent: buffer
+  });
+  return upload.fileID;
 });
 
 const app = new Koa();
